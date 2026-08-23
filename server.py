@@ -130,6 +130,29 @@ def carregar_oficios():
 def index():
     return send_from_directory(".", "index.html")
 
+# ----------------------------------------------------------------------
+# PROXY DE PDF — serve o arquivo do Cloudinary com Content-Type correto
+# ----------------------------------------------------------------------
+@app.route("/api/pdf-proxy")
+def pdf_proxy():
+    from flask import Response
+    url = request.args.get("url", "").strip()
+    if not url or "cloudinary.com" not in url:
+        return "URL inválida", 400
+    try:
+        r = requests.get(url, timeout=30)
+        return Response(
+            r.content,
+            status=200,
+            content_type="application/pdf",
+            headers={
+                "Content-Disposition": "inline",
+                "Cache-Control": "public, max-age=3600"
+            }
+        )
+    except Exception as e:
+        return f"Erro ao buscar PDF: {e}", 500
+
 @app.route("/api/oficios")
 def listar_oficios():
     q     = request.args.get("q",     "").strip().upper()
@@ -208,11 +231,10 @@ def cadastrar_oficio():
             print(f"📤 Enviando PDF para Cloudinary: {public_id}")
             resultado = cloudinary.uploader.upload(
                 arquivo,
-                resource_type = "image",
+                resource_type = "raw",
                 public_id     = public_id,
                 overwrite     = True,
-                use_filename  = False,
-                format        = "pdf"
+                use_filename  = False
             )
             link_pdf = resultado["secure_url"]
             print(f"✅ PDF na nuvem: {link_pdf}")
