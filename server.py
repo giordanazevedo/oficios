@@ -3,11 +3,19 @@ import io
 import json
 import tempfile
 import datetime
-import requests
-# pyrefly: ignore [missing-import]
+import urllib.parse
+from flask import Flask, jsonify, request, send_from_directory, Response
 import cloudinary
 import cloudinary.uploader
-from flask import Flask, jsonify, request, send_from_directory
+import cloudinary.api
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
+import requests
+import re
+import unicodedata
+
+load_dotenv()
 
 app = Flask(__name__, static_folder=".")
 
