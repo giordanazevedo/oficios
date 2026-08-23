@@ -1717,22 +1717,26 @@
                 const response = await fetch(`/api/oficios?${params}`);
                 const data = await response.json();
                 
+                if (!response.ok || data.success === false) {
+                    throw new Error(data.error || "Erro desconhecido do servidor");
+                }
+                
                 if (!q && orgao === 'TODOS' && !mes && !ano) {
                     carregarOrgaos();
                 }
                 
-                renderResults(data.results, q);
-                atualizarKPIs(data.results, 'Sincronizado');
+                renderResults(data.results || [], q);
+                atualizarKPIs(data.results || [], 'Sincronizado');
             } catch (error) {
                 console.error("Erro na busca:", error);
-                showToast("Erro ao conectar com o servidor.", "error");
+                showToast("Falha: " + error.message, "error");
                 resultsContent.innerHTML = `
                     <div class="empty-state" style="border-color: var(--danger);">
-                        <h3 style="color: var(--danger)">Erro na Pesquisa</h3>
-                        <p>Não foi possível carregar os ofícios. Verifique se o servidor está rodando.</p>
+                        <h3 style="color: var(--danger)">Erro no Servidor</h3>
+                        <p>${error.message}</p>
                     </div>
                 `;
-                atualizarKPIs([], 'Desconectado');
+                atualizarKPIs([], 'Erro de Conexão');
             }
         }
 
