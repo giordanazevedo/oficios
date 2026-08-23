@@ -1009,6 +1009,191 @@
             }
         }
 
+        /* BOTÃO EXCLUIR */
+        .btn-delete {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: transparent;
+            color: #94a3b8;
+            border: 1px solid transparent;
+            padding: 0.35rem 0.7rem;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .btn-delete:hover {
+            background: var(--danger-glow);
+            color: var(--danger);
+            border-color: rgba(220,38,38,0.15);
+        }
+        .btn-delete svg { width:14px; height:14px; }
+
+        /* BOTÃO PREVIEW PDF */
+        .btn-preview {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--primary-glow);
+            color: var(--primary);
+            border: 1px solid rgba(211,17,36,0.12);
+            padding: 0.4rem 0.85rem;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .btn-preview:hover {
+            background: var(--primary);
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -2px rgba(211,17,36,0.2);
+        }
+        .btn-preview svg { width:14px; height:14px; }
+
+        /* MODAL PDF PREVIEW */
+        .modal-pdf-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            animation: fadeIn 0.2s ease-out;
+        }
+        .modal-pdf-overlay.active { display: flex; }
+        .modal-pdf-card {
+            background: var(--surface);
+            border-radius: var(--border-radius-lg);
+            width: 95vw;
+            max-width: 900px;
+            height: 88vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 60px -10px rgba(15,23,42,0.35);
+            border: 1px solid var(--surface-border);
+            border-top: 4px solid var(--primary);
+            transform: scale(0.96);
+            opacity: 0;
+            transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s ease-out;
+        }
+        .modal-pdf-overlay.active .modal-pdf-card {
+            transform: scale(1);
+            opacity: 1;
+        }
+        .modal-pdf-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.85rem 1.25rem;
+            border-bottom: 1px solid var(--surface-border);
+            gap: 1rem;
+            flex-shrink: 0;
+        }
+        .modal-pdf-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--accent);
+            font-family: 'Outfit', sans-serif;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .modal-pdf-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
+        .modal-pdf-body {
+            flex: 1;
+            overflow: hidden;
+            background: #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-pdf-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .pdf-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .pdf-spinner {
+            width: 36px; height: 36px;
+            border: 3px solid var(--surface-border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* MODAL CONFIRMAR EXCLUSÃO */
+        .modal-confirm-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,0.55);
+            backdrop-filter: blur(6px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+        }
+        .modal-confirm-overlay.active { display: flex; }
+        .modal-confirm-card {
+            background: var(--surface);
+            border-radius: var(--border-radius-lg);
+            width: 92%;
+            max-width: 420px;
+            padding: 1.75rem 2rem;
+            box-shadow: 0 25px 50px -12px rgba(15,23,42,0.25);
+            border: 1px solid var(--surface-border);
+            border-top: 4px solid var(--danger);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            animation: fadeIn 0.15s ease-out;
+        }
+        .confirm-icon {
+            width: 48px; height: 48px;
+            background: var(--danger-glow);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--danger);
+            margin-bottom: 0.25rem;
+        }
+        .confirm-icon svg { width: 24px; height: 24px; }
+        .confirm-title {
+            font-size: 1.1rem;
+            color: var(--danger);
+            font-family: 'Outfit', sans-serif;
+        }
+        .confirm-text { font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; }
+        .confirm-numero { font-weight: 700; color: var(--text-main); }
+        .btn-confirm-delete {
+            background: var(--danger);
+            border: none;
+            padding: 0.65rem 1.25rem;
+            border-radius: var(--border-radius-sm);
+            font-weight: 700;
+            cursor: pointer;
+            color: white;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+        .btn-confirm-delete:hover { background: #b91c1c; }
+        .btn-confirm-delete:disabled { opacity: 0.6; cursor: not-allowed; }
+
         footer {
             text-align: center;
             padding: 1.5rem;
@@ -1315,6 +1500,45 @@
         </div>
     </div>
 
+    <!-- MODAL PRÉ-VISUALIZAÇÃO DE PDF -->
+    <div class="modal-pdf-overlay" id="modal-pdf">
+        <div class="modal-pdf-card">
+            <div class="modal-pdf-header">
+                <span class="modal-pdf-title" id="pdf-modal-title">Visualizando PDF</span>
+                <div class="modal-pdf-actions">
+                    <a id="pdf-open-link" href="#" target="_blank" class="btn-doc-link" style="font-size:0.8rem;">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+                        Abrir em nova aba
+                    </a>
+                    <button class="btn-close-x" id="btn-close-pdf" title="Fechar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-pdf-body" id="pdf-modal-body">
+                <div class="pdf-loading" id="pdf-loading">
+                    <div class="pdf-spinner"></div>
+                    <span>Carregando PDF...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMAR EXCLUSÃO -->
+    <div class="modal-confirm-overlay" id="modal-confirm">
+        <div class="modal-confirm-card">
+            <div class="confirm-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4h6v2"></path></svg>
+            </div>
+            <h3 class="confirm-title">Excluir Ofício?</h3>
+            <p class="confirm-text">Você está prestes a excluir o ofício <span class="confirm-numero" id="confirm-numero-text"></span>. Esta ação também remove o PDF do Cloudinary e não pode ser desfeita.</p>
+            <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:0.5rem;">
+                <button class="btn-cancel" id="btn-cancel-delete">Cancelar</button>
+                <button class="btn-confirm-delete" id="btn-confirm-delete">Sim, excluir</button>
+            </div>
+        </div>
+    </div>
+
     <div class="toast-container" id="toast-container"></div>
 
     <footer>
@@ -1526,11 +1750,18 @@
                 if (status.includes('urgente')) statusClass = 'urgente';
                 else if (status.includes('pendente')) statusClass = 'pendente';
 
+                const escapedNumero    = escapeHTML(item.numero    || '');
+                const escapedRemetente = escapeHTML(item.remetente || '');
+                const escapedAssunto   = escapeHTML(item.assunto   || '');
+                const escapedLinkPdf   = escapeHTML(item.link_pdf  || '');
+
                 const linkDoc = item.link_pdf ?
-                    `<a href="${escapeHTML(item.link_pdf)}" target="_blank" class="btn-doc-link" title="Abrir arquivo no Google Drive">
-                        <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-                        Visualizar PDF no Drive
-                    </a>` :
+                    `<button class="btn-preview"
+                        onclick="abrirPreviewPDF('${escapedLinkPdf}', '${escapedNumero}')"
+                        title="Pré-visualizar PDF">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        Pré-visualizar PDF
+                    </button>` :
                     `<span style="font-size: 0.8rem; color: #94a3b8; font-style: italic;">Sem arquivo anexado</span>`;
 
                 html += `
@@ -1553,7 +1784,15 @@
 
                         <div class="card-footer">
                             <span class="status-pill ${statusClass}">● ${escapeHTML(item.status || 'Recebido')}</span>
-                            ${linkDoc}
+                            <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                                ${linkDoc}
+                                <button class="btn-delete"
+                                    onclick="confirmarExclusao('${escapedNumero}','${escapedRemetente}','${escapedAssunto}','${escapedLinkPdf}')"
+                                    title="Excluir ofício">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4h6v2"></path></svg>
+                                    Excluir
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1681,6 +1920,115 @@
             } finally {
                 syncBtn.classList.remove('loading');
                 syncBtn.querySelector('span').textContent = 'Sincronizar Base';
+            }
+        });
+
+        // ============================================================
+        // PRÉ-VISUALIZAÇÃO DE PDF
+        // ============================================================
+        const modalPdf      = document.getElementById('modal-pdf');
+        const btnClosePdf   = document.getElementById('btn-close-pdf');
+        const pdfModalBody  = document.getElementById('pdf-modal-body');
+        const pdfModalTitle = document.getElementById('pdf-modal-title');
+        const pdfOpenLink   = document.getElementById('pdf-open-link');
+        const pdfLoading    = document.getElementById('pdf-loading');
+
+        function abrirPreviewPDF(url, numero) {
+            pdfModalTitle.textContent = numero || 'Visualizando PDF';
+            pdfOpenLink.href = url;
+
+            // Limpa e mostra loading
+            pdfModalBody.innerHTML = `
+                <div class="pdf-loading">
+                    <div class="pdf-spinner"></div>
+                    <span>Carregando PDF...</span>
+                </div>
+            `;
+
+            modalPdf.style.display = 'flex';
+            setTimeout(() => modalPdf.classList.add('active'), 10);
+
+            // Usa Google Docs Viewer para evitar bloqueio de iframe
+            const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+            const iframe = document.createElement('iframe');
+            iframe.src = viewerUrl;
+            iframe.style.cssText = 'width:100%;height:100%;border:none;';
+            iframe.onload = () => {
+                pdfModalBody.innerHTML = '';
+                pdfModalBody.appendChild(iframe);
+            };
+
+            // Fallback: se demorar muito, mostra o iframe direto
+            setTimeout(() => {
+                if (pdfModalBody.querySelector('.pdf-loading')) {
+                    pdfModalBody.innerHTML = '';
+                    pdfModalBody.appendChild(iframe);
+                }
+            }, 3000);
+        }
+
+        function fecharPreviewPDF() {
+            modalPdf.classList.remove('active');
+            setTimeout(() => {
+                modalPdf.style.display = 'none';
+                pdfModalBody.innerHTML = '';
+            }, 250);
+        }
+
+        btnClosePdf.addEventListener('click', fecharPreviewPDF);
+        modalPdf.addEventListener('click', (e) => { if (e.target === modalPdf) fecharPreviewPDF(); });
+
+        // ============================================================
+        // EXCLUSÃO DE OFÍCIO
+        // ============================================================
+        const modalConfirm     = document.getElementById('modal-confirm');
+        const btnCancelDelete  = document.getElementById('btn-cancel-delete');
+        const btnConfirmDelete = document.getElementById('btn-confirm-delete');
+        const confirmNumeroText = document.getElementById('confirm-numero-text');
+        let _deleteTarget = null;
+
+        function confirmarExclusao(numero, remetente, assunto, link_pdf) {
+            _deleteTarget = { numero, remetente, assunto, link_pdf };
+            confirmNumeroText.textContent = `"${numero}" — ${remetente}`;
+            modalConfirm.classList.add('active');
+            modalConfirm.style.display = 'flex';
+        }
+
+        function fecharConfirm() {
+            modalConfirm.classList.remove('active');
+            setTimeout(() => { modalConfirm.style.display = 'none'; }, 200);
+            _deleteTarget = null;
+        }
+
+        btnCancelDelete.addEventListener('click', fecharConfirm);
+        modalConfirm.addEventListener('click', (e) => { if (e.target === modalConfirm) fecharConfirm(); });
+
+        btnConfirmDelete.addEventListener('click', async () => {
+            if (!_deleteTarget) return;
+            btnConfirmDelete.disabled = true;
+            btnConfirmDelete.textContent = 'Excluindo...';
+
+            try {
+                const res = await fetch('/api/deletar-oficio', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(_deleteTarget)
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast('Ofício excluído com sucesso!', 'success');
+                    fecharConfirm();
+                    await carregarOrgaos();
+                    await performSearch();
+                } else {
+                    showToast('Erro ao excluir: ' + data.error, 'error');
+                }
+            } catch (err) {
+                showToast('Erro de comunicação ao excluir.', 'error');
+            } finally {
+                btnConfirmDelete.disabled = false;
+                btnConfirmDelete.textContent = 'Sim, excluir';
             }
         });
 

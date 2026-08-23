@@ -247,6 +247,72 @@ def cadastrar_oficio():
         print(f"❌ Erro ao cadastrar ofício: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+# ----------------------------------------------------------------------
+# 5. DELETAR OFÍCIO
+# ----------------------------------------------------------------------
+@app.route("/api/deletar-oficio", methods=["DELETE"])
+def deletar_oficio():
+    try:
+        body      = request.get_json()
+        numero    = (body.get("numero")    or "").strip().upper()
+        remetente = (body.get("remetente") or "").strip().upper()
+        assunto   = (body.get("assunto")   or "").strip()
+        link_pdf  = (body.get("link_pdf")  or "").strip()
+
+        if not numero and not assunto:
+            return jsonify({"success": False, "error": "Dados insuficientes para identificar o ofício."}), 400
+
+        # 1. Remove do Google Sheets (busca pela linha exata)
+        gc       = get_sheets_client()
+        planilha = gc.open_by_key(ID_PLANILHA_OFICIOS)
+        sheet    = planilha.get_worksheet(0)
+        all_rows = sheet.get_all_values()
+
+        row_to_delete = None
+        for i, row in enumerate(all_rows[1:], start=2):  # pula cabeçalho
+            row_numero    = str(row[1]).strip().upper() if len(row) > 1 else ""
+            row_remetente = str(row[2]).strip().upper() if len(row) > 2 else ""
+            row_assunto   = str(row[3]).strip()         if len(row) > 3 else ""
+            if row_numero == numero and row_remetente == remetente:
+                row_to_delete = i
+                break
+
+        if row_to_delete:
+            sheet.delete_rows(row_to_delete)
+            print(f"🗑️ Linha {row_to_delete} deletada do Sheets.")
+        else:
+            print(f"⚠️ Ofício não encontrado no Sheets para deletar.")
+
+        # 2. Remove o PDF do Cloudinary (se houver)
+        if link_pdf:
+            try:
+                import re as _re
+                # Extrai o public_id da URL do Cloudinary
+                match = _re.search(r'/upload/(?:v\d+/)?(.+?)(?:\.\w+)?$', link_pdf)
+                if match:
+                    public_id = match.group(1)
+                    # Garante extensão no public_id para resource_type=image
+                    if not public_id.endswith('.pdf'):
+                        public_id += '.pdf'
+                    cloudinary.uploader.destroy(public_id, resource_type="image")
+                    print(f"🗑️ PDF removido do Cloudinary: {public_id}")
+            except Exception as e_cloud:
+                print(f"⚠️ Não foi possível remover PDF do Cloudinary: {e_cloud}")
+
+        # 3. Remove da memória
+        global banco_oficios
+        banco_oficios = [
+            o for o in banco_oficios
+            if not (o["numero"].upper() == numero and o["remetente"].upper() == remetente)
+        ]
+
+        return jsonify({"success": True, "message": "Ofício excluído com sucesso!"})
+
+    except Exception as e:
+        print(f"❌ Erro ao deletar ofício: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 # Carrega os ofícios ao iniciar (funciona com gunicorn e direto)
 carregar_oficios()
 
