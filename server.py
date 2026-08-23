@@ -203,7 +203,7 @@ def cadastrar_oficio():
             nome_seguro = re.sub(r'[^\w\-_\. ]', '_', nome_seguro).strip()
 
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            public_id = f"oficios/{numero.replace('/', '-')}_{timestamp}"
+            public_id = f"oficios/{numero.replace('/', '-')}_{timestamp}.pdf"
 
             print(f"📤 Enviando PDF para Cloudinary: {public_id}")
             resultado = cloudinary.uploader.upload(
