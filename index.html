@@ -1937,34 +1937,28 @@
             pdfModalTitle.textContent = numero || 'Visualizando PDF';
             pdfOpenLink.href = url;
 
-            // Limpa e mostra loading
-            pdfModalBody.innerHTML = `
-                <div class="pdf-loading">
-                    <div class="pdf-spinner"></div>
-                    <span>Carregando PDF...</span>
-                </div>
-            `;
-
             modalPdf.style.display = 'flex';
             setTimeout(() => modalPdf.classList.add('active'), 10);
 
-            // Usa Google Docs Viewer para evitar bloqueio de iframe
-            const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-            const iframe = document.createElement('iframe');
-            iframe.src = viewerUrl;
-            iframe.style.cssText = 'width:100%;height:100%;border:none;';
-            iframe.onload = () => {
-                pdfModalBody.innerHTML = '';
-                pdfModalBody.appendChild(iframe);
-            };
-
-            // Fallback: se demorar muito, mostra o iframe direto
-            setTimeout(() => {
-                if (pdfModalBody.querySelector('.pdf-loading')) {
-                    pdfModalBody.innerHTML = '';
-                    pdfModalBody.appendChild(iframe);
-                }
-            }, 3000);
+            // Usa <object> para embutir PDF nativamente — sem oscilação
+            pdfModalBody.innerHTML = `
+                <object
+                    data="${url}"
+                    type="application/pdf"
+                    style="width:100%;height:100%;border:none;">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:1.25rem;padding:3rem;text-align:center;color:var(--text-muted);">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.5">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        <p style="font-size:0.95rem;">Seu navegador não suporta visualização inline de PDF.</p>
+                        <a href="${url}" target="_blank"
+                           style="background:var(--accent);color:#fff;padding:0.65rem 1.5rem;border-radius:8px;font-weight:700;text-decoration:none;">
+                            Abrir PDF em nova aba
+                        </a>
+                    </div>
+                </object>
+            `;
         }
 
         function fecharPreviewPDF() {

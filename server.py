@@ -208,11 +208,10 @@ def cadastrar_oficio():
             print(f"📤 Enviando PDF para Cloudinary: {public_id}")
             resultado = cloudinary.uploader.upload(
                 arquivo,
-                resource_type = "auto",
+                resource_type = "raw",
                 public_id     = public_id,
                 overwrite     = True,
-                use_filename  = False,
-                format        = "pdf"
+                use_filename  = False
             )
             link_pdf = resultado["secure_url"]
             print(f"✅ PDF na nuvem: {link_pdf}")
