@@ -301,19 +301,26 @@ def deletar_oficio():
         all_rows = sheet.get_all_values()
 
         row_to_delete = None
-        for i, row in enumerate(all_rows[1:], start=2):  # pula cabeçalho
-            row_numero    = str(row[1]).strip().upper() if len(row) > 1 else ""
-            row_remetente = str(row[2]).strip().upper() if len(row) > 2 else ""
-            row_assunto   = str(row[3]).strip()         if len(row) > 3 else ""
-            if row_numero == numero and row_remetente == remetente:
-                row_to_delete = i
-                break
+        if len(all_rows) > 1:
+            headers = [str(h).strip().upper() for h in all_rows[0]]
+            # Determina os índices das colunas, caso existam, ou usa o padrão
+            idx_num = headers.index("NUMERO") if "NUMERO" in headers else 1
+            idx_rem = headers.index("REMETENTE") if "REMETENTE" in headers else 2
+            
+            for i, row in enumerate(all_rows[1:], start=2):  # pula cabeçalho
+                row_numero    = str(row[idx_num]).strip().upper() if len(row) > idx_num else ""
+                row_remetente = str(row[idx_rem]).strip().upper() if len(row) > idx_rem else ""
+                
+                if row_numero == numero and row_remetente == remetente:
+                    row_to_delete = i
+                    break
 
         if row_to_delete:
             sheet.delete_rows(row_to_delete)
             print(f"🗑️ Linha {row_to_delete} deletada do Sheets.")
         else:
-            print(f"⚠️ Ofício não encontrado no Sheets para deletar.")
+            print(f"⚠️ Ofício não encontrado no Sheets para deletar. Possível inconsistência!")
+            return jsonify({"success": False, "error": "O ofício já foi removido ou não existe na planilha."}), 404
 
         # 2. Remove o PDF do Cloudinary (se houver)
         if link_pdf:
