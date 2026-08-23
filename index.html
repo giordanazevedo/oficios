@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SINTE-PI | Consulta & Gestão de Ofícios</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #d31124;
+            /* SINTE Red */
+            --primary-hover: #b80d1e;
+            --primary-glow: rgba(211, 17, 36, 0.08);
+            --accent: #004b9b;
+            /* SINTE Blue */
+            --accent-hover: #003875;
+            --accent-glow: rgba(0, 75, 155, 0.08);
+            --bg-color: #f8fafc;
+            --surface: #ffffff;
+            --surface-border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --success: #059669;
+            --success-glow: rgba(5, 150, 105, 0.08);
+            --danger: #dc2626;
+            --danger-glow: rgba(220, 38, 38, 0.08);
+            --warning: #d97706;
+            --warning-glow: rgba(217, 119, 6, 0.08);
+            --card-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+            --card-shadow-hover: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+            --border-radius-lg: 16px;
+            --border-radius-md: 12px;
+            --border-radius-sm: 8px;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2.5rem;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--surface-border);
+            border-top: 4px solid var(--primary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-img {
+            height: 50px;
+            object-fit: contain;
+            transition: var(--transition);
+        }
+
+        .logo-img:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-title {
+            padding-left: 1rem;
+            border-left: 2px solid var(--surface-border);
+        }
+
+        .logo-title h1 {
+            font-size: 1.25rem;
+            color: var(--accent);
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+        }
+
+        .logo-title p {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .btn-sync,
+        .btn-add {
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            color: var(--text-main);
+            padding: 0.6rem 1.2rem;
+            border-radius: var(--border-radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: var(--transition);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+            text-decoration: none;
+            outline: none;
+        }
+
+        .btn-add {
+            background: var(--accent);
+            color: #ffffff;
+            border-color: var(--accent);
+        }
+
+        .btn-add:hover {
+            background: var(--accent-hover);
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 75, 155, 0.2);
+        }
+
+        .btn-sync:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-glow);
+            transform: translateY(-1px);
+        }
+
+        .btn-sync svg,
+        .btn-add svg {
+            width: 16px;
+            height: 16px;
+            transition: var(--transition);
+        }
+
+        .btn-sync.loading svg {
+            animation: spin 1s linear infinite;
+        }
+
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+        }
+
+        /* KPI / METRICS SECTION */
+        .kpi-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .kpi-card {
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--border-radius-md);
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--card-shadow-hover);
+        }
+
+        .kpi-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--border-radius-sm);
+            background: var(--primary-glow);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+
+        .kpi-icon svg {
+            width: 22px;
+            height: 22px;
+            stroke-width: 2.2px;
+        }
+
+        .kpi-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .kpi-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-value {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1.2;
+        }
+
+        /* BUSCA & FILTROS SECTION */
+        .search-panel {
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .search-section-title {
+            font-size: 1.25rem;
+            color: var(--accent);
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .search-section-title svg {
+            width: 20px;
+            height: 20px;
+            color: var(--accent);
+        }
+
+        .search-container {
+            width: 100%;
+            position: relative;
+            background: var(--bg-color);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--border-radius-md);
+            padding: 0.25rem;
+            transition: var(--transition);
+        }
+
+        .search-container:focus-within {
+            border-color: var(--accent);
+            background: var(--surface);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .search-input-wrapper {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .search-icon {
+            width: 42px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+
+        .search-container:focus-within .search-icon {
+            color: var(--accent);
+        }
+
+        .search-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+            font-size: 1rem;
+            padding: 0.65rem 0.5rem;
+            font-family: inherit;
+        }
+
+        .clear-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.5rem;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .clear-btn:hover {
+            color: var(--danger);
+            background: var(--danger-glow);
+        }
+
+        .clear-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* FILTROS PANEL */
+        .filters-panel {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .filter-select,
+        .filter-input {
+            background: var(--bg-color);
+            border: 1px solid var(--surface-border);
+            color: var(--text-main);
+            padding: 0.65rem 1rem;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.875rem;
+            font-family: inherit;
+            outline: none;
+            width: 100%;
+            transition: var(--transition);
+        }
+
+        .filter-select {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg fill='%2364748b' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.25rem;
+            padding-right: 2.25rem;
+            cursor: pointer;
+        }
+
+        .filter-select:focus,
+        .filter-input:focus {
+            background: var(--surface);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* RESULTADOS */
+        .results-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--surface-border);
+            padding-bottom: 0.5rem;
+        }
+
+        .results-count {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .results-count span {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .cards-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .oficio-card {
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--border-radius-md);
+            padding: 1.25rem 1.5rem;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+            border-left: 4px solid var(--accent);
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .oficio-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--card-shadow-hover);
+        }
+
+        .oficio-card.status-urgente {
+            border-left-color: var(--danger);
+        }
+
+        .oficio-card.status-pendente {
+            border-left-color: var(--warning);
+        }
+
+        .oficio-card.status-recebido {
+            border-left-color: var(--accent);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            border-bottom: 1px dashed var(--surface-border);
+            padding-bottom: 0.75rem;
+        }
+
+        .oficio-title-box {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .oficio-numero {
+            font-size: 1.15rem;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+            font-weight: 700;
+        }
+
+        .oficio-remetente-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.72rem;
+            color: var(--accent);
+            background: var(--accent-glow);
+            border: 1px solid rgba(0, 75, 155, 0.15);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-weight: 700;
+            text-transform: uppercase;
+            width: fit-content;
+        }
+
+        .data-badge {
+            background: var(--bg-color);
+            border: 1px solid var(--surface-border);
+            color: var(--text-muted);
+            padding: 0.3rem 0.65rem;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .data-badge svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        .oficio-body {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .meta-label {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 800;
+        }
+
+        .oficio-assunto {
+            font-size: 0.925rem;
+            color: #334155;
+            line-height: 1.5;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 0.75rem;
+            border-top: 1px dashed var(--surface-border);
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .status-pill {
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 0.2rem 0.55rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .status-pill.recebido {
+            color: var(--success);
+            background: var(--success-glow);
+        }
+
+        .status-pill.pendente {
+            color: var(--warning);
+            background: var(--warning-glow);
+        }
+
+        .status-pill.urgente {
+            color: var(--danger);
+            background: var(--danger-glow);
+        }
+
+        .btn-doc-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--accent-glow);
+            color: var(--accent);
+            border: 1px solid rgba(0, 75, 155, 0.12);
+            padding: 0.4rem 0.85rem;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .btn-doc-link:hover {
+            background: var(--accent);
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -2px rgba(0, 75, 155, 0.15);
+        }
+
+        .btn-doc-link svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3.5rem 2rem;
+            background: var(--surface);
+            border: 2px dashed var(--surface-border);
+            border-radius: var(--border-radius-lg);
+            text-align: center;
+            gap: 1rem;
+            box-shadow: var(--card-shadow);
+        }
+
+        .empty-state svg {
+            width: 54px;
+            height: 54px;
+            color: var(--text-muted);
+            opacity: 0.4;
+        }
+
+        .empty-state h3 {
+            font-size: 1.15rem;
+            color: var(--accent);
+        }
+
+        .empty-state p {
+            color: var(--text-muted);
+            max-width: 420px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* SKELETON LOADERS */
+        .skeleton-card {
+            background: var(--surface);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--border-radius-md);
+            padding: 1.25rem 1.5rem;
+            border-left: 4px solid var(--surface-border);
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .skeleton-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+            transform: translateX(-100%);
+            animation: shimmer 1.6s infinite;
+        }
+
+        .skeleton-block {
+            background: #e2e8f0;
+            border-radius: 4px;
+        }
+
+        .skeleton-number {
+            width: 35%;
+            height: 1.15rem;
+        }
+
+        .skeleton-tag {
+            width: 15%;
+            height: 1rem;
+            margin-top: 0.25rem;
+        }
+
+        .skeleton-date {
+            width: 80px;
+            height: 1.2rem;
+            border-radius: 12px;
+        }
+
+        .skeleton-text {
+            width: 90%;
+            height: 1.5rem;
+        }
+
+        .skeleton-footer-left {
+            width: 90px;
+            height: 1.2rem;
+        }
+
+        .skeleton-footer-right {
+            width: 150px;
+            height: 1.6rem;
+            border-radius: 6px;
+        }
+
+        @keyframes shimmer {
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .modal-card {
+            background: var(--surface);
+            border-radius: var(--border-radius-lg);
+            width: 92%;
+            max-width: 500px;
+            padding: 1.75rem 2rem;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+            border: 1px solid var(--surface-border);
+            border-top: 5px solid var(--accent);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            transform: scale(0.95);
+            opacity: 0;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease-out;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--surface-border);
+            padding-bottom: 0.75rem;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .btn-close-x {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            padding: 0.25rem;
+            transition: var(--transition);
+        }
+
+        .btn-close-x:hover {
+            background: var(--bg-color);
+            color: var(--danger);
+        }
+
+        .btn-close-x svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .form-group label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-control {
+            border: 1px solid var(--surface-border);
+            border-radius: var(--border-radius-sm);
+            padding: 0.65rem 0.85rem;
+            font-size: 0.925rem;
+            font-family: inherit;
+            outline: none;
+            background: var(--bg-color);
+            color: var(--text-main);
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            background: var(--surface);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* CUSTOM UPLOAD AREA */
+        .upload-container {
+            border: 2px dashed var(--surface-border);
+            border-radius: var(--border-radius-sm);
+            background: var(--bg-color);
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .upload-container:hover {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .upload-container input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--text-muted);
+        }
+
+        .upload-content svg {
+            width: 28px;
+            height: 28px;
+            color: var(--accent);
+            opacity: 0.8;
+            transition: var(--transition);
+        }
+
+        .upload-container:hover .upload-content svg {
+            transform: translateY(-2px);
+        }
+
+        .upload-text {
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .upload-text span {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
+        .upload-hint {
+            font-size: 0.68rem;
+        }
+
+        .file-selected-badge {
+            margin-top: 0.5rem;
+            padding: 0.4rem 0.75rem;
+            border-radius: var(--border-radius-sm);
+            background: var(--success-glow);
+            color: var(--success);
+            border: 1px solid rgba(5, 150, 105, 0.15);
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+        }
+
+        .file-selected-badge svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+        }
+
+        .btn-cancel {
+            background: #f1f5f9;
+            border: 1px solid var(--surface-border);
+            padding: 0.6rem 1.2rem;
+            border-radius: var(--border-radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+
+        .btn-cancel:hover {
+            background: #e2e8f0;
+            color: var(--text-main);
+        }
+
+        .btn-save {
+            background: var(--accent);
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: var(--border-radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            color: white;
+            transition: var(--transition);
+        }
+
+        .btn-save:hover {
+            background: var(--accent-hover);
+            box-shadow: 0 4px 6px -1px rgba(0, 75, 155, 0.2);
+        }
+
+        .btn-save:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* TOAST NOTIFICAÇÕES */
+        .toast-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            z-index: 1000;
+        }
+
+        .toast {
+            background: var(--surface);
+            color: var(--text-main);
+            padding: 0.85rem 1.25rem;
+            border-radius: var(--border-radius-md);
+            box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            min-width: 320px;
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid var(--surface-border);
+            border-left-width: 4px;
+        }
+
+        .toast.success {
+            border-left-color: var(--success);
+        }
+
+        .toast.error {
+            border-left-color: var(--danger);
+        }
+
+        .toast-message {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--surface-border);
+            background: var(--surface);
+            margin-top: auto;
+        }
+
+        footer strong {
+            color: var(--accent);
+        }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 1rem 1.5rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .logo-container {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .logo-title h1 {
+                font-size: 1.15rem;
+            }
+
+            .logo-title p {
+                display: none;
+            }
+
+            .header-actions {
+                width: 100%;
+            }
+
+            .btn-sync,
+            .btn-add {
+                flex: 1;
+                justify-content: center;
+                padding: 0.65rem;
+            }
+
+            main {
+                padding: 1.25rem 1rem;
+                gap: 1.25rem;
+            }
+
+            .filters-panel {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+
+            .toast-container {
+                left: 1rem;
+                right: 1rem;
+                bottom: 1rem;
+            }
+
+            .toast {
+                min-width: unset;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo-container">
+            <img src="https://www.sintepiaui.org.br/images/logos/1/logomarcaa24.png" alt="SINTE-PI Logo"
+                class="logo-img">
+            <div class="logo-title">
+                <h1>Gestão de Ofícios</h1>
+                <p>Repositório & Busca Integrada</p>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <button id="btn-novo-oficio" class="btn-add">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>Novo Ofício</span>
+            </button>
+
+            <button id="sync-btn" class="btn-sync">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                </svg>
+                <span>Sincronizar Base</span>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- KPI / METRICS STATS DASHBOARD -->
+        <section class="kpi-section" id="kpi-section">
+            <div class="kpi-card">
+                <div class="kpi-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Total de Ofícios</span>
+                    <h3 class="kpi-value" id="kpi-total">-</h3>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="color: var(--accent); background: var(--accent-glow);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Órgãos Ativos</span>
+                    <h3 class="kpi-value" id="kpi-orgaos">-</h3>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="color: var(--success); background: var(--success-glow);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label font-bold">Com Anexo PDF</span>
+                    <h3 class="kpi-value" id="kpi-pdfs">-</h3>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" id="kpi-sync-icon" style="color: var(--warning); background: var(--warning-glow);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 14 14"></polyline>
+                    </svg>
+                </div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Status Conexão</span>
+                    <h3 class="kpi-value" id="kpi-sync" style="font-size: 0.95rem;">Carregando...</h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- FILTROS E BUSCA UNIFICADOS EM UM PANEL -->
+        <section class="search-panel">
+            <h2 class="search-section-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                Consulta Unificada de Ofícios
+            </h2>
+
+            <div class="search-container">
+                <div class="search-input-wrapper">
+                    <div class="search-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </div>
+                    <input type="text" id="search-input" class="search-input"
+                        placeholder="Digite o número, assunto ou órgão do ofício..." autofocus autocomplete="off">
+                    <button id="clear-btn" class="clear-btn" title="Limpar pesquisa">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- FILTROS ADICIONAIS -->
+            <div class="filters-panel">
+                <select id="filter-orgao" class="filter-select">
+                    <option value="TODOS">Todos os Órgãos / Remetentes</option>
+                </select>
+
+                <select id="filter-mes" class="filter-select">
+                    <option value="">Todos os Meses</option>
+                    <option value="01">Janeiro</option>
+                    <option value="02">Fevereiro</option>
+                    <option value="03">Março</option>
+                    <option value="04">Abril</option>
+                    <option value="05">Maio</option>
+                    <option value="06">Junho</option>
+                    <option value="07">Julho</option>
+                    <option value="08">Agosto</option>
+                    <option value="09">Setembro</option>
+                    <option value="10">Outubro</option>
+                    <option value="11">Novembro</option>
+                    <option value="12">Dezembro</option>
+                </select>
+
+                <input type="number" id="filter-ano" class="filter-input" placeholder="Ano (Ex: 2026)">
+            </div>
+        </section>
+
+        <!-- SEÇÃO DE RESULTADOS -->
+        <section class="results-section">
+            <div class="results-header" id="results-header" style="display: none;">
+                <div class="results-count" id="results-count">
+                    Nenhum ofício encontrado
+                </div>
+            </div>
+
+            <div id="results-content">
+                <!-- Estado Inicial de Entrada -->
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                    </svg>
+                    <h3>Sistema Pronto para Consulta</h3>
+                    <p>Digite um termo no campo de busca ou selecione um filtro de órgão/mês para visualizar os ofícios recebidos.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL DE CADASTRO DE NOVO OFÍCIO -->
+    <div class="modal-overlay" id="modal-oficio">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title">Cadastrar Novo Ofício</h3>
+                <button class="btn-close-x" id="btn-close-modal-x" title="Fechar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="form-cadastrar" onsubmit="salvarOficio(event)">
+                <div class="form-group">
+                    <label>Número do Ofício *</label>
+                    <input type="text" name="numero" class="form-control" placeholder="Ex: Ofício nº 145/2026" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Órgão / Remetente *</label>
+                    <input type="text" name="remetente" class="form-control"
+                        placeholder="Ex: SEDUC, SEAD, TCE-PI, PIAUÍPREV" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Data de Recebimento *</label>
+                    <input type="date" name="data" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Assunto / Conteúdo Principal *</label>
+                    <textarea name="assunto" rows="3" class="form-control"
+                        placeholder="Descreva brevemente o tema do ofício..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Anexar Documento PDF (Upload direto p/ Drive)</label>
+                    <div class="upload-container" id="upload-container">
+                        <input type="file" name="arquivo" id="file-input" accept=".pdf,image/*">
+                        <div class="upload-content">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <div class="upload-text">Arraste o arquivo PDF aqui ou <span>procure no seu dispositivo</span></div>
+                            <div class="upload-hint">Formatos aceitos: PDF, Imagens (máx. 10MB)</div>
+                        </div>
+                    </div>
+                    <div class="file-selected-badge" id="file-selected-badge">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        <span id="selected-file-name">Nenhum arquivo selecionado</span>
+                    </div>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn-cancel" id="btn-close-modal">Cancelar</button>
+                    <button type="submit" class="btn-save" id="btn-submit-form">Salvar no Drive & Sistema</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <footer>
+        <p>&copy; 2026 <strong>SINTE-PI</strong>. Todos os direitos reservados. Sistema de Gestão e Busca de Ofícios.
+        </p>
+    </footer>
+
+    <script>
+        const searchInput = document.getElementById('search-input');
+        const clearBtn = document.getElementById('clear-btn');
+        const syncBtn = document.getElementById('sync-btn');
+        const resultsHeader = document.getElementById('results-header');
+        const resultsCount = document.getElementById('results-count');
+        const resultsContent = document.getElementById('results-content');
+        const toastContainer = document.getElementById('toast-container');
+
+        const filterOrgao = document.getElementById('filter-orgao');
+        const filterMes = document.getElementById('filter-mes');
+        const filterAno = document.getElementById('filter-ano');
+
+        const modalOficio = document.getElementById('modal-oficio');
+        const btnNovoOficio = document.getElementById('btn-novo-oficio');
+        const btnCloseModal = document.getElementById('btn-close-modal');
+        const btnCloseModalX = document.getElementById('btn-close-modal-x');
+
+        const fileInput = document.getElementById('file-input');
+        const fileSelectedBadge = document.getElementById('file-selected-badge');
+        const selectedFileName = document.getElementById('selected-file-name');
+        const uploadContainer = document.getElementById('upload-container');
+
+        let debounceTimeout;
+        let globalOficios = []; // To store loaded ofícios for full base stats
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+
+            let icon = '';
+            if (type === 'success') {
+                icon = '<svg viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="3" style="width:20px;height:20px;"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            } else if (type === 'error') {
+                icon = '<svg viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="3" style="width:20px;height:20px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
+            }
+
+            toast.innerHTML = icon + '<span class="toast-message">' + message + '</span>';
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                toast.style.transition = 'all 0.5s ease-in-out';
+                setTimeout(() => toast.remove(), 500);
+            }, 4000);
+        }
+
+        function atualizarKPIs(oficios, statusStr = 'Sincronizado') {
+            const total = oficios.length;
+            const uniqueOrgaos = new Set(oficios.map(o => o.remetente).filter(Boolean)).size;
+            const comPdf = oficios.filter(o => o.link_pdf).length;
+
+            document.getElementById('kpi-total').textContent = total;
+            document.getElementById('kpi-orgaos').textContent = uniqueOrgaos;
+            document.getElementById('kpi-pdfs').textContent = comPdf;
+            
+            const kpiSync = document.getElementById('kpi-sync');
+            const kpiSyncIcon = document.getElementById('kpi-sync-icon');
+            kpiSync.textContent = statusStr;
+            
+            if (statusStr === 'Erro' || statusStr === 'Desconectado') {
+                kpiSyncIcon.style.color = 'var(--danger)';
+                kpiSyncIcon.style.background = 'var(--danger-glow)';
+                kpiSync.style.color = 'var(--danger)';
+            } else if (statusStr === 'Sincronizando...') {
+                kpiSyncIcon.style.color = 'var(--warning)';
+                kpiSyncIcon.style.background = 'var(--warning-glow)';
+                kpiSync.style.color = 'var(--warning)';
+            } else {
+                kpiSyncIcon.style.color = 'var(--success)';
+                kpiSyncIcon.style.background = 'var(--success-glow)';
+                kpiSync.style.color = 'var(--success)';
+            }
+        }
+
+        async function carregarOrgaos() {
+            try {
+                const res = await fetch('/api/orgaos');
+                const data = await res.json();
+                filterOrgao.innerHTML = '<option value="TODOS">Todos os Órgãos / Remetentes</option>';
+                data.orgaos.forEach(org => {
+                    const opt = document.createElement('option');
+                    opt.value = org;
+                    opt.textContent = org;
+                    filterOrgao.appendChild(opt);
+                });
+            } catch (err) {
+                console.error("Erro ao carregar órgãos:", err);
+            }
+        }
+
+        searchInput.addEventListener('input', () => {
+            const query = searchInput.value;
+            clearBtn.style.display = query.trim().length > 0 ? 'flex' : 'none';
+
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                performSearch();
+            }, 250);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearBtn.style.display = 'none';
+            performSearch();
+            searchInput.focus();
+        });
+
+        filterOrgao.addEventListener('change', performSearch);
+        filterMes.addEventListener('change', performSearch);
+        filterAno.addEventListener('input', () => {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(performSearch, 300);
+        });
+
+        async function performSearch() {
+            const q = searchInput.value.trim();
+            const orgao = filterOrgao.value;
+            const mes = filterMes.value;
+            const ano = filterAno.value.trim();
+
+            const params = new URLSearchParams({ q, orgao, mes, ano });
+
+            // Skeleton Screen Loader
+            resultsContent.innerHTML = `
+                <div class="cards-list">
+                    ${Array(3).fill().map(() => `
+                        <div class="skeleton-card">
+                            <div class="card-header">
+                                <div class="oficio-title-box" style="width: 60%;">
+                                    <div class="skeleton-block skeleton-number"></div>
+                                    <div class="skeleton-block skeleton-tag"></div>
+                                </div>
+                                <div class="skeleton-block skeleton-date"></div>
+                            </div>
+                            <div class="oficio-body">
+                                <div class="skeleton-block skeleton-text" style="width: 25%;"></div>
+                                <div class="skeleton-block skeleton-text" style="width: 85%;"></div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="skeleton-block skeleton-footer-left"></div>
+                                <div class="skeleton-block skeleton-footer-right"></div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`/api/oficios?${params}`);
+                const data = await response.json();
+                
+                // If it is an empty search query and no filters, cache the total oficios
+                if (!q && orgao === 'TODOS' && !mes && !ano) {
+                    globalOficios = data.results;
+                }
+                
+                renderResults(data.results, q);
+                
+                // Update stats based on full loaded set if available, otherwise current search
+                atualizarKPIs(globalOficios.length > 0 ? globalOficios : data.results, 'Sincronizado');
+            } catch (error) {
+                console.error("Erro na busca:", error);
+                showToast("Erro ao conectar com o servidor.", "error");
+                resultsContent.innerHTML = `
+                    <div class="empty-state" style="border-color: var(--danger);">
+                        <h3 style="color: var(--danger)">Erro na Pesquisa</h3>
+                        <p>Não foi possível carregar os ofícios. Verifique se o servidor está rodando.</p>
+                    </div>
+                `;
+                atualizarKPIs([], 'Desconectado');
+            }
+        }
+
+        function renderResults(results, searchTerm) {
+            resultsHeader.style.display = 'flex';
+
+            if (!results || results.length === 0) {
+                resultsCount.innerHTML = 'Nenhum ofício correspondente encontrado';
+                resultsContent.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                            <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                            <path d="M16 16s-1.5-2-4-2-4 2-4 2"></path>
+                        </svg>
+                        <h3>Nenhum ofício localizado</h3>
+                        <p>Tente alterar os filtros de busca ou cadastrar novos ofícios no sistema.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            resultsCount.innerHTML = `Encontrado(s) <span>${results.length}</span> ofício(s)`;
+
+            let html = '<div class="cards-list">';
+            results.forEach(item => {
+                const status = (item.status || 'Recebido').toLowerCase();
+                let statusClass = 'recebido';
+                if (status.includes('urgente')) statusClass = 'urgente';
+                else if (status.includes('pendente')) statusClass = 'pendente';
+
+                const linkDoc = item.link_pdf ?
+                    `<a href="${escapeHTML(item.link_pdf)}" target="_blank" class="btn-doc-link" title="Abrir arquivo no Google Drive">
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                        Visualizar PDF no Drive
+                    </a>` :
+                    `<span style="font-size: 0.8rem; color: #94a3b8; font-style: italic;">Sem arquivo anexado</span>`;
+
+                html += `
+                    <div class="oficio-card status-${statusClass}">
+                        <div class="card-header">
+                            <div class="oficio-title-box">
+                                <h3 class="oficio-numero">${escapeHTML(item.numero || 'Ofício s/n')}</h3>
+                                <span class="oficio-remetente-tag">${escapeHTML(item.remetente || 'Órgão')}</span>
+                            </div>
+                            <span class="data-badge">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                ${escapeHTML(item.data || 'Data N/I')}
+                            </span>
+                        </div>
+
+                        <div class="oficio-body">
+                            <span class="meta-label">Assunto / Descrição</span>
+                            <p class="oficio-assunto">${escapeHTML(item.assunto || 'Sem descrição')}</p>
+                        </div>
+
+                        <div class="card-footer">
+                            <span class="status-pill ${statusClass}">● ${escapeHTML(item.status || 'Recebido')}</span>
+                            ${linkDoc}
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            resultsContent.innerHTML = html;
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Smooth Modal Toggle Handlers
+        const abrirModal = () => {
+            modalOficio.style.display = 'flex';
+            setTimeout(() => modalOficio.classList.add('active'), 10);
+        };
+        const fecharModal = () => {
+            modalOficio.classList.remove('active');
+            setTimeout(() => {
+                if (!modalOficio.classList.contains('active')) {
+                    modalOficio.style.display = 'none';
+                    // Reset selected file badge
+                    fileInput.value = '';
+                    fileSelectedBadge.style.display = 'none';
+                    selectedFileName.textContent = 'Nenhum arquivo selecionado';
+                }
+            }, 250);
+        };
+
+        btnNovoOficio.addEventListener('click', abrirModal);
+        btnCloseModal.addEventListener('click', fecharModal);
+        btnCloseModalX.addEventListener('click', fecharModal);
+        modalOficio.addEventListener('click', (e) => {
+            if (e.target === modalOficio) fecharModal();
+        });
+
+        // Custom File Input Change listener
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
+                selectedFileName.textContent = `${file.name} (${sizeInMb} MB)`;
+                fileSelectedBadge.style.display = 'flex';
+            } else {
+                selectedFileName.textContent = 'Nenhum arquivo selecionado';
+                fileSelectedBadge.style.display = 'none';
+            }
+        });
+
+        // Add visual highlights to drag/drop zone
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadContainer.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                uploadContainer.style.borderColor = 'var(--accent)';
+                uploadContainer.style.background = 'var(--accent-glow)';
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadContainer.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                uploadContainer.style.borderColor = '';
+                uploadContainer.style.background = '';
+            }, false);
+        });
+
+        // Envio do formulário com upload
+        async function salvarOficio(e) {
+            e.preventDefault();
+            const btnSubmit = document.getElementById('btn-submit-form');
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = 'Enviando p/ Google Drive...';
+
+            const formData = new FormData(document.getElementById('form-cadastrar'));
+
+            try {
+                const res = await fetch('/api/cadastrar-oficio', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast("Ofício e PDF cadastrados com sucesso!", "success");
+                    fecharModal();
+                    document.getElementById('form-cadastrar').reset();
+                    await carregarOrgaos();
+                    await performSearch();
+                } else {
+                    showToast("Erro ao cadastrar: " + data.error, "error");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Erro de comunicação com o servidor.", "error");
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = 'Salvar no Drive & Sistema';
+            }
+        }
+
+        // Sincronização
+        syncBtn.addEventListener('click', async () => {
+            if (syncBtn.classList.contains('loading')) return;
+
+            syncBtn.classList.add('loading');
+            syncBtn.querySelector('span').textContent = 'Sincronizando...';
+            showToast("Recarregando dados do Google Sheets...", "success");
+            atualizarKPIs(globalOficios, 'Sincronizando...');
+
+            try {
+                await carregarOrgaos();
+                await performSearch();
+                showToast("Dados atualizados com sucesso!", "success");
+            } catch (err) {
+                showToast("Erro ao sincronizar.", "error");
+                atualizarKPIs(globalOficios, 'Erro');
+            } finally {
+                syncBtn.classList.remove('loading');
+                syncBtn.querySelector('span').textContent = 'Sincronizar Base';
+            }
+        });
+
+        // Inicialização
+        carregarOrgaos();
+        performSearch();
+    </script>
+</body>
+
+</html>
