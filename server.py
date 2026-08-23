@@ -42,6 +42,8 @@ def serve_upload(filename):
 # ----------------------------------------------------------------------
 # 2. CONEXÃO AO BANCO DE DADOS
 # ----------------------------------------------------------------------
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
 def get_db_connection():
     try:
         conn = psycopg2.connect(DATABASE_URL)
