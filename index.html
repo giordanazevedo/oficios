@@ -1295,13 +1295,6 @@
                 </svg>
                 <span>Excluir Todos</span>
             </button>
-
-            <button id="sync-btn" class="btn-sync">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-                </svg>
-                <span>Sincronizar Base</span>
-            </button>
         </div>
     </header>
 
@@ -1575,15 +1568,15 @@
     <script>
         const searchInput = document.getElementById('search-input');
         const clearBtn = document.getElementById('clear-btn');
-        const syncBtn = document.getElementById('sync-btn');
-        const resultsHeader = document.getElementById('results-header');
-        const resultsCount = document.getElementById('results-count');
-        const resultsContent = document.getElementById('results-content');
-        const toastContainer = document.getElementById('toast-container');
-
         const filterOrgao = document.getElementById('filter-orgao');
         const filterMes = document.getElementById('filter-mes');
         const filterAno = document.getElementById('filter-ano');
+        const resultsCount = document.getElementById('results-count');
+        const resultsContent = document.getElementById('results-content');
+        const resultsHeader = document.getElementById('results-header');
+        
+        const syncBtn = document.getElementById('sync-btn');
+        const toastContainer = document.getElementById('toast-container');
 
         const modalOficio = document.getElementById('modal-oficio');
         const btnNovoOficio = document.getElementById('btn-novo-oficio');
@@ -1596,7 +1589,7 @@
         const uploadContainer = document.getElementById('upload-container');
 
         let debounceTimeout;
-        let globalOficios = []; // To store loaded ofícios for full base stats
+        let globalOficios = [];
 
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
@@ -1696,7 +1689,6 @@
 
             const params = new URLSearchParams({ q, orgao, mes, ano });
 
-            // Skeleton Screen Loader
             resultsContent.innerHTML = `
                 <div class="cards-list">
                     ${Array(3).fill().map(() => `
@@ -1725,15 +1717,12 @@
                 const response = await fetch(`/api/oficios?${params}`);
                 const data = await response.json();
                 
-                // If it is an empty search query and no filters, cache the total oficios
                 if (!q && orgao === 'TODOS' && !mes && !ano) {
-                    globalOficios = data.results;
+                    carregarOrgaos();
                 }
                 
                 renderResults(data.results, q);
-                
-                // Update stats based on full loaded set if available, otherwise current search
-                atualizarKPIs(globalOficios.length > 0 ? globalOficios : data.results, 'Sincronizado');
+                atualizarKPIs(data.results, 'Sincronizado');
             } catch (error) {
                 console.error("Erro na busca:", error);
                 showToast("Erro ao conectar com o servidor.", "error");
@@ -1813,7 +1802,7 @@
                             <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
                                 ${linkDoc}
                                 <button class="btn-delete"
-                                    onclick="confirmarExclusao('${escapedNumero}','${escapedRemetente}','${escapedAssunto}','${escapedLinkPdf}')"
+                                    onclick="confirmarExclusao(${item.id}, '${escapedNumero}','${escapedRemetente}','${escapedAssunto}','${escapedLinkPdf}')"
                                     title="Excluir ofício">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4h6v2"></path></svg>
                                     Excluir
@@ -1838,7 +1827,6 @@
                 .replace(/'/g, '&#039;');
         }
 
-        // Smooth Modal Toggle Handlers
         const abrirModal = () => {
             modalOficio.style.display = 'flex';
             setTimeout(() => modalOficio.classList.add('active'), 10);
@@ -1848,7 +1836,6 @@
             setTimeout(() => {
                 if (!modalOficio.classList.contains('active')) {
                     modalOficio.style.display = 'none';
-                    // Reset selected file badge
                     fileInput.value = '';
                     fileSelectedBadge.style.display = 'none';
                     selectedFileName.textContent = 'Nenhum arquivo selecionado';
@@ -1863,7 +1850,6 @@
             if (e.target === modalOficio) fecharModal();
         });
 
-        // Custom File Input Change listener
         fileInput.addEventListener('change', () => {
             if (fileInput.files && fileInput.files[0]) {
                 const file = fileInput.files[0];
@@ -1876,7 +1862,6 @@
             }
         });
 
-        // Add visual highlights to drag/drop zone
         ['dragenter', 'dragover'].forEach(eventName => {
             uploadContainer.addEventListener(eventName, (e) => {
                 e.preventDefault();
@@ -1893,12 +1878,11 @@
             }, false);
         });
 
-        // Envio do formulário com upload
         async function salvarOficio(e) {
             e.preventDefault();
             const btnSubmit = document.getElementById('btn-submit-form');
             btnSubmit.disabled = true;
-            btnSubmit.textContent = 'Enviando p/ Google Drive...';
+            btnSubmit.textContent = 'Enviando p/ Sistema...';
 
             const formData = new FormData(document.getElementById('form-cadastrar'));
 
@@ -1923,46 +1907,19 @@
                 showToast("Erro de comunicação com o servidor.", "error");
             } finally {
                 btnSubmit.disabled = false;
-                btnSubmit.textContent = 'Salvar no Drive & Sistema';
+                btnSubmit.textContent = 'Salvar no Sistema';
             }
         }
 
-        // Sincronização
-        syncBtn.addEventListener('click', async () => {
-            if (syncBtn.classList.contains('loading')) return;
-
-            syncBtn.classList.add('loading');
-            syncBtn.querySelector('span').textContent = 'Sincronizando...';
-            showToast("Recarregando dados do Google Sheets...", "success");
-            atualizarKPIs(globalOficios, 'Sincronizando...');
-
-            try {
-                await carregarOrgaos();
-                await performSearch();
-                showToast("Dados atualizados com sucesso!", "success");
-            } catch (err) {
-                showToast("Erro ao sincronizar.", "error");
-                atualizarKPIs(globalOficios, 'Erro');
-            } finally {
-                syncBtn.classList.remove('loading');
-                syncBtn.querySelector('span').textContent = 'Sincronizar Base';
-            }
-        });
-
-        // ============================================================
-        // PRÉ-VISUALIZAÇÃO DE PDF
-        // ============================================================
         const modalPdf      = document.getElementById('modal-pdf');
         const btnClosePdf   = document.getElementById('btn-close-pdf');
         const pdfModalBody  = document.getElementById('pdf-modal-body');
         const pdfModalTitle = document.getElementById('pdf-modal-title');
         const pdfOpenLink   = document.getElementById('pdf-open-link');
-        const pdfLoading    = document.getElementById('pdf-loading');
 
         function abrirPreviewPDF(url, numero) {
             pdfModalTitle.textContent = numero || 'Visualizando PDF';
 
-            // Usa o proxy do servidor para garantir Content-Type correto
             const proxyUrl = `/api/pdf-proxy?url=${encodeURIComponent(url)}`;
             pdfOpenLink.href = proxyUrl;
 
@@ -2000,17 +1957,14 @@
         btnClosePdf.addEventListener('click', fecharPreviewPDF);
         modalPdf.addEventListener('click', (e) => { if (e.target === modalPdf) fecharPreviewPDF(); });
 
-        // ============================================================
-        // EXCLUSÃO DE OFÍCIO
-        // ============================================================
         const modalConfirm     = document.getElementById('modal-confirm');
         const btnCancelDelete  = document.getElementById('btn-cancel-delete');
         const btnConfirmDelete = document.getElementById('btn-confirm-delete');
         const confirmNumeroText = document.getElementById('confirm-numero-text');
         let _deleteTarget = null;
 
-        function confirmarExclusao(numero, remetente, assunto, link_pdf) {
-            _deleteTarget = { numero, remetente, assunto, link_pdf };
+        function confirmarExclusao(id, numero, remetente, assunto, link_pdf) {
+            _deleteTarget = { id, numero, remetente, assunto, link_pdf };
             confirmNumeroText.textContent = `"${numero}" — ${remetente}`;
             modalConfirm.classList.add('active');
             modalConfirm.style.display = 'flex';
@@ -2054,9 +2008,6 @@
             }
         });
 
-        // ============================================================
-        // EXCLUSÃO DE TODOS OS OFÍCIOS
-        // ============================================================
         const btnDeletarTodos = document.getElementById('btn-deletar-todos');
         const modalConfirmAll = document.getElementById('modal-confirm-all');
         const btnCancelDeleteAll = document.getElementById('btn-cancel-delete-all');
@@ -2088,7 +2039,6 @@
                 if (data.success) {
                     showToast(data.message, 'success');
                     fecharConfirmAll();
-                    globalOficios = []; // clear cache
                     await carregarOrgaos();
                     await performSearch();
                 } else {
@@ -2102,7 +2052,6 @@
             }
         });
 
-        // Inicialização
         carregarOrgaos();
         performSearch();
     </script>

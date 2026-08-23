@@ -74,56 +74,41 @@ def serve_upload(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
 # ----------------------------------------------------------------------
-# 1. HEALTH CHECK
+# 2. CONEXÃO AO BANCO DE DADOS
 # ----------------------------------------------------------------------
-@app.route('/health')
-def health():
-    return jsonify({"status": "ok", "oficios_em_memoria": len(banco_oficios)})
-
-# ----------------------------------------------------------------------
-# 2. FUNÇÃO PARA CARREGAR OS OFÍCIOS EM MEMÓRIA
-# ----------------------------------------------------------------------
-def carregar_oficios():
-    global banco_oficios
-    banco_oficios = []
-    print("\n🔄 Carregando base de ofícios do Google Sheets...")
-
+def get_db_connection():
     try:
-        gc = get_sheets_client()
-        planilha = gc.open_by_key(ID_PLANILHA_OFICIOS)
-        sheet = planilha.get_worksheet(0)
-        all_rows = sheet.get_all_values()
-        
-        if len(all_rows) > 1:
-            headers = [h.strip().upper() for h in all_rows[0]]
-            for row in all_rows[1:]:
-                # Mapeia cada coluna usando o header se existir, ou pega por índice
-                row_data = dict(zip(headers, row))
-                
-                data_val  = str(row_data.get("DATA", row[0] if len(row) > 0 else "")).strip()
-                numero    = str(row_data.get("NUMERO", row[1] if len(row) > 1 else "")).strip()
-                remetente = str(row_data.get("REMETENTE", row[2] if len(row) > 2 else "")).strip()
-                assunto   = str(row_data.get("ASSUNTO", row[3] if len(row) > 3 else "")).strip()
-                link_pdf  = str(row_data.get("LINK_PDF", row[4] if len(row) > 4 else "")).strip()
-                status    = str(row_data.get("STATUS", row[5] if len(row) > 5 else "Recebido")).strip()
-                
-                if not status:
-                    status = "Recebido"
-
-                if numero or assunto:
-                    banco_oficios.append({
-                        "data":      data_val,
-                        "numero":    numero,
-                        "remetente": remetente,
-                        "assunto":   assunto,
-                        "link_pdf":  link_pdf,
-                        "status":    status
-                    })
-        print(f"✅ Total de {len(banco_oficios)} ofício(s) indexado(s) com sucesso via gspread!")
+        conn = psycopg2.connect(DATABASE_URL)
+        return conn
     except Exception as e:
-        print(f"❌ Erro ao ler planilha de ofícios: {e}")
+        print(f"❌ Erro ao conectar ao PostgreSQL: {e}")
+        return None
 
-    return len(banco_oficios)
+def init_db():
+    conn = get_db_connection()
+    if conn:
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS oficios (
+                        id SERIAL PRIMARY KEY,
+                        data VARCHAR(50),
+                        numero VARCHAR(100),
+                        remetente VARCHAR(255),
+                        assunto TEXT,
+                        link_pdf TEXT,
+                        status VARCHAR(50) DEFAULT 'Recebido',
+                        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                """)
+                conn.commit()
+                print("✅ Tabela 'oficios' verificada/criada com sucesso no PostgreSQL.")
+        except Exception as e:
+            print(f"❌ Erro ao criar tabela: {e}")
+        finally:
+            conn.close()
+
+init_db()
 
 # ----------------------------------------------------------------------
 # 3. ROTAS DA API
@@ -132,21 +117,22 @@ def carregar_oficios():
 def index():
     return send_from_directory(".", "index.html")
 
+@app.route('/health')
+def health():
+    return jsonify({"status": "ok"})
+
 # ----------------------------------------------------------------------
 # PROXY DE PDF — serve o arquivo do Cloudinary com Content-Type correto
 # ----------------------------------------------------------------------
 @app.route("/api/pdf-proxy")
 def pdf_proxy():
-    from flask import Response
-    import urllib.parse
     url = request.args.get("url", "").strip()
     if not url or "cloudinary.com" not in url:
         return "URL inválida", 400
     try:
-        # Extrai o nome do arquivo da URL do Cloudinary
         path = urllib.parse.urlparse(url).path
         filename = path.split("/")[-1]
-        filename = urllib.parse.unquote(filename)  # decodifica %20 etc.
+        filename = urllib.parse.unquote(filename)
         if not filename.lower().endswith(".pdf"):
             filename += ".pdf"
 
@@ -170,48 +156,60 @@ def listar_oficios():
     mes   = request.args.get("mes",   "").strip()
     ano   = request.args.get("ano",   "").strip()
 
-    filtrados = []
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"success": False, "error": "Erro de conexão com o banco de dados"}), 500
 
-    for item in banco_oficios:
+    try:
+        query = "SELECT * FROM oficios WHERE 1=1"
+        params = []
+
         if q:
-            match_texto = (
-                q in item["numero"].upper() or
-                q in item["remetente"].upper() or
-                q in item["assunto"].upper()
-            )
-            if not match_texto:
-                continue
-
+            query += " AND (UPPER(numero) LIKE %s OR UPPER(remetente) LIKE %s OR UPPER(assunto) LIKE %s)"
+            like_q = f"%{q}%"
+            params.extend([like_q, like_q, like_q])
+            
         if orgao and orgao != "TODOS":
-            if orgao not in item["remetente"].upper():
-                continue
+            query += " AND UPPER(remetente) LIKE %s"
+            params.append(f"%{orgao}%")
 
-        data_str = item["data"]
-        if mes or ano:
-            partes = data_str.replace("-", "/").split("/")
-            if len(partes) == 3:
-                d_ano = partes[2] if len(partes[2]) == 4 else partes[0]
-                d_mes = partes[1]
+        if ano:
+            query += " AND data LIKE %s"
+            params.append(f"%{ano}")
+            
+        if mes:
+            query += " AND (data LIKE %s OR data LIKE %s)"
+            params.extend([f"%/{mes.zfill(2)}/%", f"%-{mes.zfill(2)}-%"])
 
-                if ano and d_ano != ano:
-                    continue
-                if mes and d_mes.zfill(2) != mes.zfill(2):
-                    continue
+        query += " ORDER BY id DESC"
 
-        filtrados.append(item)
-
-    return jsonify({"results": filtrados, "total": len(filtrados)})
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(query, params)
+            rows = cur.fetchall()
+            
+        return jsonify({"results": rows, "total": len(rows)})
+    except Exception as e:
+        print(f"❌ Erro ao buscar ofícios: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        conn.close()
 
 @app.route("/api/orgaos")
 def listar_orgaos():
-    orgaos = set(item["remetente"] for item in banco_oficios if item["remetente"])
-    return jsonify({"orgaos": sorted(list(orgaos))})
-
-@app.route("/api/recarregar", methods=["POST"])
-def recarregar():
-    """Força recarregamento dos ofícios a partir do Google Sheets."""
-    total = carregar_oficios()
-    return jsonify({"success": True, "total": total, "message": f"{total} ofício(s) carregado(s) do Sheets."})
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"orgaos": []})
+        
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT DISTINCT UPPER(remetente) FROM oficios WHERE remetente IS NOT NULL AND remetente != ''")
+            rows = cur.fetchall()
+            orgaos = sorted([row[0] for row in rows])
+        return jsonify({"orgaos": orgaos})
+    except Exception as e:
+        return jsonify({"orgaos": []})
+    finally:
+        conn.close()
 
 @app.route("/api/cadastrar-oficio", methods=["POST"])
 def cadastrar_oficio():
@@ -228,9 +226,7 @@ def cadastrar_oficio():
 
         link_pdf = ""
 
-        # 1. Envia o PDF para o Cloudinary (nuvem gratuita — link permanente)
         if arquivo and arquivo.filename:
-            import unicodedata, re
             nome_seguro = unicodedata.normalize('NFKD', arquivo.filename)
             nome_seguro = nome_seguro.encode('ascii', 'ignore').decode('ascii')
             nome_seguro = re.sub(r'[^\w\-_\. ]', '_', nome_seguro).strip()
@@ -238,7 +234,6 @@ def cadastrar_oficio():
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             public_id = f"oficios/{numero.replace('/', '-').replace(' ', '_')}_{timestamp}"
 
-            print(f"📤 Enviando PDF para Cloudinary: {public_id}")
             resultado = cloudinary.uploader.upload(
                 arquivo,
                 resource_type = "raw",
@@ -247,155 +242,92 @@ def cadastrar_oficio():
                 use_filename  = False
             )
             link_pdf = resultado["secure_url"]
-            print(f"✅ PDF na nuvem: {link_pdf}")
 
-        # 2. Formata a data
-        if "-" in data_oficio and len(data_oficio.split("-")) == 3:
-            ano_f, mes_f, dia_f = data_oficio.split("-")
-            data_oficio = f"{dia_f}/{mes_f}/{ano_f}"
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({"success": False, "error": "Erro de conexão com o banco de dados."}), 500
 
-        # 3. Salva na Planilha Google Sheets
-        gc       = get_sheets_client()
-        planilha = gc.open_by_key(ID_PLANILHA_OFICIOS)
-        sheet    = planilha.get_worksheet(0)
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO oficios (data, numero, remetente, assunto, link_pdf, status)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (data_oficio, numero, remetente, assunto, link_pdf, status))
+            conn.commit()
 
-        nova_linha = [data_oficio, numero, remetente, assunto, link_pdf, status]
-        sheet.append_row(nova_linha)
-
-        # 4. Adiciona em memória para consulta instantânea
-        novo_registro = {
-            "data":      data_oficio,
-            "numero":    numero,
-            "remetente": remetente,
-            "assunto":   assunto,
-            "link_pdf":  link_pdf,
-            "status":    status
-        }
-        banco_oficios.insert(0, novo_registro)
-
-        return jsonify({"success": True, "message": "Ofício cadastrado com sucesso!", "link_pdf": link_pdf})
+        return jsonify({"success": True})
 
     except Exception as e:
-        print(f"❌ Erro ao cadastrar ofício: {e}")
+        print(f"❌ Erro no cadastro: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
 
-# ----------------------------------------------------------------------
-# 5. DELETAR OFÍCIO
-# ----------------------------------------------------------------------
 @app.route("/api/deletar-oficio", methods=["DELETE"])
 def deletar_oficio():
     try:
         body      = request.get_json()
-        numero    = (body.get("numero")    or "").strip().upper()
-        remetente = (body.get("remetente") or "").strip().upper()
-        assunto   = (body.get("assunto")   or "").strip()
+        oficio_id = body.get("id")
         link_pdf  = (body.get("link_pdf")  or "").strip()
 
-        if not numero and not assunto:
-            return jsonify({"success": False, "error": "Dados insuficientes para identificar o ofício."}), 400
+        if not oficio_id:
+            return jsonify({"success": False, "error": "ID não fornecido para exclusão."}), 400
 
-        # 1. Remove do Google Sheets (busca pela linha exata)
-        gc       = get_sheets_client()
-        planilha = gc.open_by_key(ID_PLANILHA_OFICIOS)
-        sheet    = planilha.get_worksheet(0)
-        all_rows = sheet.get_all_values()
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({"success": False, "error": "Erro de conexão com o banco de dados."}), 500
 
-        row_to_delete = None
-        if len(all_rows) > 1:
-            headers = [str(h).strip().upper() for h in all_rows[0]]
-            # Determina os índices das colunas, caso existam, ou usa o padrão
-            idx_num = headers.index("NUMERO") if "NUMERO" in headers else 1
-            idx_rem = headers.index("REMETENTE") if "REMETENTE" in headers else 2
-            
-            for i, row in enumerate(all_rows[1:], start=2):  # pula cabeçalho
-                row_numero    = str(row[idx_num]).strip().upper() if len(row) > idx_num else ""
-                row_remetente = str(row[idx_rem]).strip().upper() if len(row) > idx_rem else ""
-                
-                if row_numero == numero and row_remetente == remetente:
-                    row_to_delete = i
-                    break
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM oficios WHERE id = %s", (oficio_id,))
+            conn.commit()
 
-        if row_to_delete:
-            sheet.delete_rows(row_to_delete)
-            print(f"🗑️ Linha {row_to_delete} deletada do Sheets.")
-        else:
-            print(f"⚠️ Ofício não encontrado no Sheets para deletar. Possível inconsistência!")
-            return jsonify({"success": False, "error": "O ofício já foi removido ou não existe na planilha."}), 404
-
-        # 2. Remove o PDF do Cloudinary (se houver)
         if link_pdf:
             try:
-                import re as _re
-                # Extrai o public_id da URL do Cloudinary
-                match = _re.search(r'/upload/(?:v\d+/)?(.+?)(?:\.\w+)?$', link_pdf)
-                if match:
-                    public_id = match.group(1)
-                    # Garante extensão no public_id para resource_type=image
-                    if not public_id.endswith('.pdf'):
-                        public_id += '.pdf'
-                    cloudinary.uploader.destroy(public_id, resource_type="image")
-                    print(f"🗑️ PDF removido do Cloudinary: {public_id}")
+                if "cloudinary.com" in link_pdf:
+                    public_id_com_extensao = link_pdf.split("/upload/")[-1].split("/", 1)[-1]
+                    version_index = public_id_com_extensao.find("v")
+                    if version_index == 0:
+                        public_id_com_extensao = public_id_com_extensao.split("/", 1)[-1]
+
+                    cloudinary.uploader.destroy(public_id_com_extensao, resource_type="raw")
             except Exception as e_cloud:
-                print(f"⚠️ Não foi possível remover PDF do Cloudinary: {e_cloud}")
+                print(f"⚠️ Erro ao deletar no Cloudinary: {e_cloud}")
 
-        # 3. Remove da memória
-        global banco_oficios
-        banco_oficios = [
-            o for o in banco_oficios
-            if not (o["numero"].upper() == numero and o["remetente"].upper() == remetente)
-        ]
-
-        return jsonify({"success": True, "message": "Ofício excluído com sucesso!"})
+        return jsonify({"success": True})
 
     except Exception as e:
         print(f"❌ Erro ao deletar ofício: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
 
-
-# ----------------------------------------------------------------------
-# 6. DELETAR TODOS OS OFÍCIOS
-# ----------------------------------------------------------------------
 @app.route("/api/deletar-todos", methods=["DELETE"])
 def deletar_todos():
     try:
-        # 1. Limpa Google Sheets (mantém só o cabeçalho)
-        gc = get_sheets_client()
-        planilha = gc.open_by_key(ID_PLANILHA_OFICIOS)
-        sheet = planilha.get_worksheet(0)
-        
-        all_rows = sheet.get_all_values()
-        if len(all_rows) > 1:
-            # Salva o cabeçalho
-            headers = all_rows[0]
-            # Limpa toda a planilha de forma garantida
-            sheet.clear()
-            # Restaura o cabeçalho na primeira linha
-            sheet.update(range_name='A1', values=[headers])
-            print("🗑️ Planilha limpa e cabeçalhos restaurados.")
-        
-        # 2. Limpa Cloudinary (Opcional, tenta apagar os arquivos na pasta 'oficios')
+        conn = get_db_connection()
+        if not conn:
+            return jsonify({"success": False, "error": "Erro de conexão com o banco de dados."}), 500
+
+        with conn.cursor() as cur:
+            cur.execute("TRUNCATE TABLE oficios RESTART IDENTITY")
+            conn.commit()
+
         try:
             cloudinary.api.delete_resources_by_prefix("oficios/")
-            print("🗑️ Arquivos da pasta 'oficios' no Cloudinary foram removidos.")
         except Exception as e_cloud:
             print(f"⚠️ Não foi possível limpar a pasta no Cloudinary: {e_cloud}")
-
-        # 3. Limpa memória
-        global banco_oficios
-        banco_oficios = []
 
         return jsonify({"success": True, "message": "Todos os ofícios foram excluídos com sucesso!"})
 
     except Exception as e:
         print(f"❌ Erro ao deletar todos os ofícios: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
-
-
-# Carrega os ofícios ao iniciar (funciona com gunicorn e direto)
-carregar_oficios()
+    finally:
+        if 'conn' in locals() and conn:
+            conn.close()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     print(f"\n🚀 Sistema de Gestão de Ofícios SINTE-PI no ar na porta {port}!")
-    print(f"👉 Acesse no navegador: http://localhost:{port}\n")
     app.run(host="0.0.0.0", port=port, debug=False)
