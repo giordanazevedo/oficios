@@ -356,11 +356,15 @@ def deletar_todos():
         planilha = gc.open_by_key(ID_PLANILHA_OFICIOS)
         sheet = planilha.get_worksheet(0)
         
-        # Pega total de linhas e se houver mais de uma (cabeçalho), apaga o resto
         all_rows = sheet.get_all_values()
         if len(all_rows) > 1:
-            sheet.delete_rows(2, len(all_rows))
-            print("🗑️ Todas as linhas removidas do Sheets (exceto cabeçalho).")
+            # Salva o cabeçalho
+            headers = all_rows[0]
+            # Limpa toda a planilha de forma garantida
+            sheet.clear()
+            # Restaura o cabeçalho na primeira linha
+            sheet.update(range_name='A1', values=[headers])
+            print("🗑️ Planilha limpa e cabeçalhos restaurados.")
         
         # 2. Limpa Cloudinary (Opcional, tenta apagar os arquivos na pasta 'oficios')
         try:
