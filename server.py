@@ -20,12 +20,16 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # ======================================================================
 # CONFIGURAÇÕES DO CLOUDINARY (armazenamento de PDFs na nuvem)
 # ======================================================================
-cloudinary.config(
-    cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME", "a2t90mzc"),
-    api_key    = os.environ.get("CLOUDINARY_API_KEY",    "998998274244915"),
-    api_secret = os.environ.get("CLOUDINARY_API_SECRET", "4prlbU1YG9ecfm40sX6_5tY49K0"),
-    secure     = True
+# Se CLOUDINARY_URL estiver definida (ex: Railway), o SDK lê automaticamente.
+# Caso contrário, configura com variáveis individuais ou valores padrão.
+if not os.environ.get("CLOUDINARY_URL"):
+    cloudinary.config(
+        cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME", "a2t90mzc"),
+        api_key    = os.environ.get("CLOUDINARY_API_KEY",    "998998274244915"),
+        api_secret = os.environ.get("CLOUDINARY_API_SECRET", "4prlbU1YG9ecfm40sX6_5tY49K0"),
+        secure     = True
 )
+cloudinary.config(secure=True)
 
 # ======================================================================
 # CONFIGURAÇÕES DO GOOGLE SHEETS
