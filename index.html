@@ -1285,6 +1285,17 @@
                 <span>Novo Ofício</span>
             </button>
 
+            <button id="btn-deletar-todos" class="btn-sync" style="background: var(--danger); border-color: var(--danger); color: white;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6l-1 14H6L5 6"></path>
+                    <path d="M10 11v6"></path>
+                    <path d="M14 11v6"></path>
+                    <path d="M9 6V4h6v2"></path>
+                </svg>
+                <span>Excluir Todos</span>
+            </button>
+
             <button id="sync-btn" class="btn-sync">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
@@ -1535,6 +1546,21 @@
             <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:0.5rem;">
                 <button class="btn-cancel" id="btn-cancel-delete">Cancelar</button>
                 <button class="btn-confirm-delete" id="btn-confirm-delete">Sim, excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONFIRMAR EXCLUSÃO DE TODOS -->
+    <div class="modal-confirm-overlay" id="modal-confirm-all">
+        <div class="modal-confirm-card">
+            <div class="confirm-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </div>
+            <h3 class="confirm-title">Excluir TODOS os Ofícios?</h3>
+            <p class="confirm-text"><strong>ATENÇÃO:</strong> Você está prestes a excluir absolutamente todos os ofícios do sistema. Esta ação limpará a planilha, removerá os PDFs do Cloudinary e <strong>não pode ser desfeita</strong>. Tem certeza absoluta?</p>
+            <div style="display:flex; gap:0.75rem; justify-content:flex-end; margin-top:0.5rem;">
+                <button class="btn-cancel" id="btn-cancel-delete-all">Cancelar</button>
+                <button class="btn-confirm-delete" id="btn-confirm-delete-all">Sim, EXCLUIR TUDO</button>
             </div>
         </div>
     </div>
@@ -2025,6 +2051,54 @@
             } finally {
                 btnConfirmDelete.disabled = false;
                 btnConfirmDelete.textContent = 'Sim, excluir';
+            }
+        });
+
+        // ============================================================
+        // EXCLUSÃO DE TODOS OS OFÍCIOS
+        // ============================================================
+        const btnDeletarTodos = document.getElementById('btn-deletar-todos');
+        const modalConfirmAll = document.getElementById('modal-confirm-all');
+        const btnCancelDeleteAll = document.getElementById('btn-cancel-delete-all');
+        const btnConfirmDeleteAll = document.getElementById('btn-confirm-delete-all');
+
+        btnDeletarTodos.addEventListener('click', () => {
+            modalConfirmAll.classList.add('active');
+            modalConfirmAll.style.display = 'flex';
+        });
+
+        function fecharConfirmAll() {
+            modalConfirmAll.classList.remove('active');
+            setTimeout(() => { modalConfirmAll.style.display = 'none'; }, 200);
+        }
+
+        btnCancelDeleteAll.addEventListener('click', fecharConfirmAll);
+        modalConfirmAll.addEventListener('click', (e) => { if (e.target === modalConfirmAll) fecharConfirmAll(); });
+
+        btnConfirmDeleteAll.addEventListener('click', async () => {
+            btnConfirmDeleteAll.disabled = true;
+            btnConfirmDeleteAll.textContent = 'Excluindo tudo...';
+
+            try {
+                const res = await fetch('/api/deletar-todos', {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    fecharConfirmAll();
+                    globalOficios = []; // clear cache
+                    await carregarOrgaos();
+                    await performSearch();
+                } else {
+                    showToast('Erro ao excluir tudo: ' + data.error, 'error');
+                }
+            } catch (err) {
+                showToast('Erro de comunicação ao excluir tudo.', 'error');
+            } finally {
+                btnConfirmDeleteAll.disabled = false;
+                btnConfirmDeleteAll.textContent = 'Sim, EXCLUIR TUDO';
             }
         });
 

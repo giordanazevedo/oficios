@@ -88,36 +88,38 @@ def carregar_oficios():
     banco_oficios = []
     print("\n🔄 Carregando base de ofícios do Google Sheets...")
 
-    url_xlsx = f"https://docs.google.com/spreadsheets/d/{ID_PLANILHA_OFICIOS}/export?format=xlsx"
     try:
-        res = requests.get(url_xlsx)
-        if res.status_code == 200:
-            df = pd.read_excel(io.BytesIO(res.content))
-            df.columns = [str(c).strip().upper() for c in df.columns]
+        gc = get_sheets_client()
+        planilha = gc.open_by_key(ID_PLANILHA_OFICIOS)
+        sheet = planilha.get_worksheet(0)
+        all_rows = sheet.get_all_values()
+        
+        if len(all_rows) > 1:
+            headers = [h.strip().upper() for h in all_rows[0]]
+            for row in all_rows[1:]:
+                # Mapeia cada coluna usando o header se existir, ou pega por índice
+                row_data = dict(zip(headers, row))
+                
+                data_val  = str(row_data.get("DATA", row[0] if len(row) > 0 else "")).strip()
+                numero    = str(row_data.get("NUMERO", row[1] if len(row) > 1 else "")).strip()
+                remetente = str(row_data.get("REMETENTE", row[2] if len(row) > 2 else "")).strip()
+                assunto   = str(row_data.get("ASSUNTO", row[3] if len(row) > 3 else "")).strip()
+                link_pdf  = str(row_data.get("LINK_PDF", row[4] if len(row) > 4 else "")).strip()
+                status    = str(row_data.get("STATUS", row[5] if len(row) > 5 else "Recebido")).strip()
+                
+                if not status:
+                    status = "Recebido"
 
-            for _, linha in df.iterrows():
-                data_val = str(linha.get("DATA", "")).strip()
-                if " 00:00:00" in data_val:
-                    data_val = data_val.replace(" 00:00:00", "")
-
-                numero    = str(linha.get("NUMERO", "")).strip()
-                remetente = str(linha.get("REMETENTE", "")).strip()
-                assunto   = str(linha.get("ASSUNTO", "")).strip()
-                link_pdf  = str(linha.get("LINK_PDF", "")).strip()
-                status    = str(linha.get("STATUS", "Recebido")).strip()
-
-                if (numero and numero.upper() != "NAN") or (assunto and assunto.upper() != "NAN"):
+                if numero or assunto:
                     banco_oficios.append({
-                        "data":      data_val  if data_val.upper()  != "NAN" else "",
-                        "numero":    numero    if numero.upper()    != "NAN" else "",
-                        "remetente": remetente if remetente.upper() != "NAN" else "",
-                        "assunto":   assunto   if assunto.upper()   != "NAN" else "",
-                        "link_pdf":  link_pdf  if link_pdf.upper()  != "NAN" else "",
-                        "status":    status    if status.upper()    != "NAN" else "Recebido"
+                        "data":      data_val,
+                        "numero":    numero,
+                        "remetente": remetente,
+                        "assunto":   assunto,
+                        "link_pdf":  link_pdf,
+                        "status":    status
                     })
-            print(f"✅ Total de {len(banco_oficios)} ofício(s) indexado(s) com sucesso!")
-        else:
-            print(f"⚠️ Google Sheets retornou status {res.status_code}")
+        print(f"✅ Total de {len(banco_oficios)} ofício(s) indexado(s) com sucesso via gspread!")
     except Exception as e:
         print(f"❌ Erro ao ler planilha de ofícios: {e}")
 
@@ -340,6 +342,41 @@ def deletar_oficio():
 
     except Exception as e:
         print(f"❌ Erro ao deletar ofício: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ----------------------------------------------------------------------
+# 6. DELETAR TODOS OS OFÍCIOS
+# ----------------------------------------------------------------------
+@app.route("/api/deletar-todos", methods=["DELETE"])
+def deletar_todos():
+    try:
+        # 1. Limpa Google Sheets (mantém só o cabeçalho)
+        gc = get_sheets_client()
+        planilha = gc.open_by_key(ID_PLANILHA_OFICIOS)
+        sheet = planilha.get_worksheet(0)
+        
+        # Pega total de linhas e se houver mais de uma (cabeçalho), apaga o resto
+        all_rows = sheet.get_all_values()
+        if len(all_rows) > 1:
+            sheet.delete_rows(2, len(all_rows))
+            print("🗑️ Todas as linhas removidas do Sheets (exceto cabeçalho).")
+        
+        # 2. Limpa Cloudinary (Opcional, tenta apagar os arquivos na pasta 'oficios')
+        try:
+            cloudinary.api.delete_resources_by_prefix("oficios/")
+            print("🗑️ Arquivos da pasta 'oficios' no Cloudinary foram removidos.")
+        except Exception as e_cloud:
+            print(f"⚠️ Não foi possível limpar a pasta no Cloudinary: {e_cloud}")
+
+        # 3. Limpa memória
+        global banco_oficios
+        banco_oficios = []
+
+        return jsonify({"success": True, "message": "Todos os ofícios foram excluídos com sucesso!"})
+
+    except Exception as e:
+        print(f"❌ Erro ao deletar todos os ofícios: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
