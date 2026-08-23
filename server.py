@@ -136,17 +136,25 @@ def index():
 @app.route("/api/pdf-proxy")
 def pdf_proxy():
     from flask import Response
+    import urllib.parse
     url = request.args.get("url", "").strip()
     if not url or "cloudinary.com" not in url:
         return "URL inválida", 400
     try:
+        # Extrai o nome do arquivo da URL do Cloudinary
+        path = urllib.parse.urlparse(url).path
+        filename = path.split("/")[-1]
+        filename = urllib.parse.unquote(filename)  # decodifica %20 etc.
+        if not filename.lower().endswith(".pdf"):
+            filename += ".pdf"
+
         r = requests.get(url, timeout=30)
         return Response(
             r.content,
             status=200,
             content_type="application/pdf",
             headers={
-                "Content-Disposition": "inline",
+                "Content-Disposition": f'inline; filename="{filename}"',
                 "Cache-Control": "public, max-age=3600"
             }
         )
