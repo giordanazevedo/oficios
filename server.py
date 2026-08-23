@@ -3,14 +3,11 @@ import io
 import json
 import tempfile
 import datetime
-import pandas as pd
 import requests
 # pyrefly: ignore [missing-import]
 import cloudinary
 import cloudinary.uploader
 from flask import Flask, jsonify, request, send_from_directory
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 
 app = Flask(__name__, static_folder=".")
 
@@ -20,53 +17,14 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # ======================================================================
 # CONFIGURAÇÕES DO CLOUDINARY (armazenamento de PDFs na nuvem)
 # ======================================================================
-# Se CLOUDINARY_URL estiver definida (ex: Railway), o SDK lê automaticamente.
-# Caso contrário, configura com variáveis individuais ou valores padrão.
 if not os.environ.get("CLOUDINARY_URL"):
     cloudinary.config(
         cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME", "a2t90mzc"),
         api_key    = os.environ.get("CLOUDINARY_API_KEY",    "998998274244915"),
         api_secret = os.environ.get("CLOUDINARY_API_SECRET", "4prlbU1YG9ecfm40sX6_5tY49K0"),
         secure     = True
-)
+    )
 cloudinary.config(secure=True)
-
-# ======================================================================
-# CONFIGURAÇÕES DO GOOGLE SHEETS
-# ======================================================================
-ID_PLANILHA_OFICIOS = "1XrFpPOrAFip48Wxun0_tnc2GjiIp06nZmMGFeh-0NiI"
-CREDENTIALS_FILE = "credentials.json"
-
-SCOPES = [
-    "https://spreadsheets.google.com/feeds",
-    "https://www.googleapis.com/auth/drive"
-]
-
-# ======================================================================
-# CARREGA CREDENCIAIS DO GOOGLE (variável de ambiente ou arquivo local)
-# ======================================================================
-_GOOGLE_CREDS_ENV = os.environ.get("GOOGLE_CREDENTIALS_JSON", "")
-_temp_creds_file = None
-
-if _GOOGLE_CREDS_ENV:
-    # Modo nuvem: cria arquivo temporário a partir da variável de ambiente
-    _temp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
-    _temp.write(_GOOGLE_CREDS_ENV)
-    _temp.flush()
-    _temp.close()
-    CREDENTIALS_FILE = _temp.name
-    _temp_creds_file = _temp.name
-    print("✅ Credenciais Google carregadas via variável de ambiente.")
-elif os.path.exists(CREDENTIALS_FILE):
-    print("✅ Credenciais Google carregadas do arquivo local.")
-else:
-    print("⚠️  AVISO: Nenhuma credencial Google encontrada! Configure GOOGLE_CREDENTIALS_JSON.")
-
-banco_oficios = []
-
-def get_sheets_client():
-    creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, SCOPES)
-    return gspread.authorize(creds)
 
 # Rota para servir arquivos locais antigos (compatibilidade)
 @app.route('/uploads/<path:filename>')
