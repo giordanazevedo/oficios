@@ -4,7 +4,8 @@ import json
 import tempfile
 import datetime
 import urllib.parse
-from flask import Flask, jsonify, request, send_from_directory, Response
+from functools import wraps
+from flask import Flask, jsonify, request, send_from_directory, Response, session
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
@@ -18,6 +19,8 @@ import unicodedata
 load_dotenv()
 
 app = Flask(__name__, static_folder=".")
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "chave-secreta-padrao-sinte-pi-2026")
+app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(days=7)
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -36,6 +39,7 @@ cloudinary.config(secure=True)
 
 # Rota para servir arquivos locais antigos (compatibilidade)
 @app.route('/uploads/<path:filename>')
+@login_required
 def serve_upload(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
@@ -79,6 +83,44 @@ def init_db():
 init_db()
 
 # ----------------------------------------------------------------------
+# CONTROLE DE ACESSO (AUTENTICAÇÃO)
+# ----------------------------------------------------------------------
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('authorized'):
+            return jsonify({"success": False, "error": "Não autorizado"}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route("/api/login", methods=["POST"])
+def api_login():
+    try:
+        body = request.get_json() or {}
+        password = body.get("password")
+        env_password = os.environ.get("APP_PASSWORD", "123456") # Senha padrão caso não configurada
+        
+        if password == env_password:
+            session['authorized'] = True
+            session.permanent = True
+            return jsonify({"success": True, "message": "Autenticado com sucesso"})
+        else:
+            return jsonify({"success": False, "error": "Senha incorreta"}), 401
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/api/logout", methods=["POST"])
+def api_logout():
+    session.pop('authorized', None)
+    return jsonify({"success": True, "message": "Desconectado com sucesso"})
+
+@app.route("/api/check-auth")
+def api_check_auth():
+    if session.get('authorized'):
+        return jsonify({"authorized": True})
+    return jsonify({"authorized": False}), 401
+
+# ----------------------------------------------------------------------
 # 3. ROTAS DA API
 # ----------------------------------------------------------------------
 @app.route("/")
@@ -93,6 +135,7 @@ def health():
 # PROXY DE PDF — serve o arquivo do Cloudinary com Content-Type correto
 # ----------------------------------------------------------------------
 @app.route("/api/pdf-proxy")
+@login_required
 def pdf_proxy():
     url = request.args.get("url", "").strip()
     if not url or "cloudinary.com" not in url:
@@ -118,6 +161,7 @@ def pdf_proxy():
         return f"Erro ao buscar PDF: {e}", 500
 
 @app.route("/api/oficios")
+@login_required
 def listar_oficios():
     q     = request.args.get("q",     "").strip().upper()
     orgao = request.args.get("orgao", "").strip().upper()
@@ -163,6 +207,7 @@ def listar_oficios():
         conn.close()
 
 @app.route("/api/orgaos")
+@login_required
 def listar_orgaos():
     conn = get_db_connection()
     if not conn:
@@ -180,6 +225,7 @@ def listar_orgaos():
         conn.close()
 
 @app.route("/api/cadastrar-oficio", methods=["POST"])
+@login_required
 def cadastrar_oficio():
     try:
         numero       = request.form.get("numero",   "").strip().upper()
@@ -232,6 +278,7 @@ def cadastrar_oficio():
             conn.close()
 
 @app.route("/api/deletar-oficio", methods=["DELETE"])
+@login_required
 def deletar_oficio():
     try:
         body      = request.get_json()
@@ -271,6 +318,7 @@ def deletar_oficio():
             conn.close()
 
 @app.route("/api/deletar-todos", methods=["DELETE"])
+@login_required
 def deletar_todos():
     try:
         conn = get_db_connection()

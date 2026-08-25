@@ -1260,6 +1260,125 @@
                 width: 100%;
             }
         }
+
+        /* ======================================================================
+           CSS PARA CONTROLE DE ACESSO (TELA DE LOGIN PREMIUM)
+           ====================================================================== */
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 1.5rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .login-card {
+            background: var(--surface);
+            border-radius: var(--border-radius-lg);
+            width: 100%;
+            max-width: 440px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+            border: 1px solid var(--surface-border);
+            border-top: 4px solid var(--primary);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .login-header {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .login-logo {
+            height: 70px;
+            object-fit: contain;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-header h2 {
+            font-size: 1.4rem;
+            color: var(--accent);
+            letter-spacing: -0.5px;
+        }
+
+        .login-header p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .password-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .password-input-wrapper .form-control {
+            padding-right: 3rem;
+            width: 100%;
+        }
+
+        .btn-toggle-password {
+            position: absolute;
+            right: 0.75rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.25rem;
+            transition: var(--transition);
+        }
+
+        .btn-toggle-password:hover {
+            color: var(--accent);
+        }
+
+        .btn-toggle-password svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .login-error-msg {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--danger);
+            margin-top: 0.4rem;
+            font-weight: 500;
+            animation: shake 0.2s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 
@@ -1294,6 +1413,15 @@
                     <path d="M9 6V4h6v2"></path>
                 </svg>
                 <span>Excluir Todos</span>
+            </button>
+
+            <button id="btn-logout" class="btn-sync" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Sair</span>
             </button>
         </div>
     </header>
@@ -1560,6 +1688,35 @@
 
     <div class="toast-container" id="toast-container"></div>
 
+    <!-- TELA DE LOGIN UNIFICADA (OVERLAY) -->
+    <div class="login-overlay" id="login-overlay" style="display: none;">
+        <div class="login-card">
+            <div class="login-header">
+                <img src="https://www.sintepiaui.org.br/images/logos/1/logomarcaa24.png" alt="SINTE-PI Logo" class="login-logo">
+                <h2>Gestão de Ofícios SINTE-PI</h2>
+                <p>Acesso restrito a colaboradores autorizados.</p>
+            </div>
+            <form id="form-login" onsubmit="realizarLogin(event)">
+                <div class="form-group">
+                    <label for="login-password">Senha de Acesso</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="login-password" name="password" class="form-control" placeholder="Digite a senha..." required>
+                        <button type="button" id="btn-toggle-password" class="btn-toggle-password" title="Mostrar/Ocultar senha">
+                            <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                    <span id="login-error-msg" class="login-error-msg" style="display: none;">Senha incorreta. Tente novamente.</span>
+                </div>
+                <button type="submit" id="btn-submit-login" class="btn-save" style="width: 100%; justify-content: center; margin-top: 1rem; padding: 0.75rem;">
+                    <span>Entrar no Sistema</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <footer>
         <p>&copy; 2026 <strong>SINTE-PI</strong>. Todos os direitos reservados. Sistema de Gestão e Busca de Ofícios.
         </p>
@@ -1590,6 +1747,121 @@
 
         let debounceTimeout;
         let globalOficios = [];
+
+        // ======================================================================
+        // LÓGICA DE CONTROLE DE ACESSO E AUTENTICAÇÃO
+        // ======================================================================
+        
+        // Intercepta todas as requisições HTTP para capturar 401 (Não Autorizado)
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            try {
+                const response = await originalFetch(...args);
+                if (response.status === 401 && !args[0].includes('/api/check-auth') && !args[0].includes('/api/login')) {
+                    exibirTelaLogin();
+                }
+                return response;
+            } catch (error) {
+                throw error;
+            }
+        };
+
+        function exibirTelaLogin() {
+            document.getElementById('login-overlay').style.display = 'flex';
+            document.getElementById('btn-logout').style.display = 'none';
+            document.getElementById('login-password').value = '';
+            document.getElementById('login-password').focus();
+        }
+
+        async function verificarAutenticacao() {
+            try {
+                const res = await fetch('/api/check-auth');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.authorized) {
+                        document.getElementById('login-overlay').style.display = 'none';
+                        document.getElementById('btn-logout').style.display = 'flex';
+                        carregarOrgaos();
+                        performSearch();
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.error("Erro ao verificar autenticação:", err);
+            }
+            exibirTelaLogin();
+        }
+
+        async function realizarLogin(e) {
+            e.preventDefault();
+            const btnSubmit = document.getElementById('btn-submit-login');
+            const errorMsg = document.getElementById('login-error-msg');
+            const passwordInput = document.getElementById('login-password');
+            
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = '<span>Verificando...</span>';
+            errorMsg.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: passwordInput.value })
+                });
+
+                if (res.ok) {
+                    showToast('Login realizado com sucesso!', 'success');
+                    document.getElementById('login-overlay').style.display = 'none';
+                    document.getElementById('btn-logout').style.display = 'flex';
+                    await carregarOrgaos();
+                    await performSearch();
+                } else {
+                    errorMsg.style.display = 'block';
+                    passwordInput.focus();
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Erro de comunicação com o servidor.', 'error');
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = '<span>Entrar no Sistema</span>';
+            }
+        }
+
+        async function realizarLogout() {
+            try {
+                const res = await fetch('/api/logout', { method: 'POST' });
+                if (res.ok) {
+                    showToast('Sessão encerrada.', 'success');
+                    exibirTelaLogin();
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Erro ao encerrar a sessão.', 'error');
+            }
+        }
+
+        const btnTogglePassword = document.getElementById('btn-toggle-password');
+        if (btnTogglePassword) {
+            btnTogglePassword.addEventListener('click', () => {
+                const passwordInput = document.getElementById('login-password');
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                
+                const eyeIcon = document.getElementById('eye-icon');
+                if (type === 'text') {
+                    eyeIcon.innerHTML = `
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                    `;
+                } else {
+                    eyeIcon.innerHTML = `
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    `;
+                }
+            });
+        }
 
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
@@ -2056,8 +2328,8 @@
             }
         });
 
-        carregarOrgaos();
-        performSearch();
+        document.getElementById('btn-logout').addEventListener('click', realizarLogout);
+        verificarAutenticacao();
     </script>
 </body>
 
