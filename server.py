@@ -22,6 +22,17 @@ app = Flask(__name__, static_folder=".")
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "chave-secreta-padrao-sinte-pi-2026")
 app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(days=7)
 
+# ----------------------------------------------------------------------
+# CONTROLE DE ACESSO - DECORATOR
+# ----------------------------------------------------------------------
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('authorized'):
+            return jsonify({"success": False, "error": "Não autorizado"}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -85,14 +96,6 @@ init_db()
 # ----------------------------------------------------------------------
 # CONTROLE DE ACESSO (AUTENTICAÇÃO)
 # ----------------------------------------------------------------------
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('authorized'):
-            return jsonify({"success": False, "error": "Não autorizado"}), 401
-        return f(*args, **kwargs)
-    return decorated_function
-
 @app.route("/api/login", methods=["POST"])
 def api_login():
     try:
